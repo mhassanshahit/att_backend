@@ -55,22 +55,19 @@ app.get('/health', async (req, res) => {
   };
 
   try {
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
+    const prisma = require('./prisma/client');
     await prisma.$connect();
     health.database = 'connected';
-    await prisma.$disconnect();
   } catch (error) {
+    console.error('Health check database error:', error.message);
     health.database = 'disconnected';
+    health.error = error.message;
     health.status = 'ERROR';
   }
 
   const statusCode = health.status === 'OK' ? 200 : 503;
   res.status(statusCode).json(health);
 });
-
-// API routes
-app.use('/api', routes);
 
 // Root route
 app.get('/', (req, res) => {
@@ -85,6 +82,9 @@ app.get('/', (req, res) => {
     status: 'running'
   });
 });
+
+// API routes (must be before 404 handler)
+app.use('/api', routes);
 
 // Handle 404
 app.use((req, res) => {
