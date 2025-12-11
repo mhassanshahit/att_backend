@@ -56,25 +56,80 @@ exports.getFile = async (req, res) => {
     if (!filename) {
       return res.status(400).json({ 
         success: false,
-        message: 'Filename required' 
+        message: 'Filename is required' 
       });
     }
 
-    const filePath = path.join(__dirname, '../uploads', filename);
+    // Prevent directory traversal
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid filename' 
+      });
+    }
+
+    const uploadsDir = path.join(__dirname, '../uploads');
+    const filePath = path.join(uploadsDir, filename);
     
-    if (!fs.existsSync(filePath)) {
+    // Verify the file exists and is within the uploads directory
+    if (!fs.existsSync(filePath) || !filePath.startsWith(uploadsDir)) {
       return res.status(404).json({ 
         success: false,
         message: 'File not found' 
       });
     }
 
-    res.sendFile(filePath);
+    // Get file stats
+    const stats = await fs.promises.stat(filePath);
+    
+    // Check if it's a file
+    if (!stats.isFile()) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Not a file' 
+      });
+    }
+
+    // Determine content type based on file extension
+    const ext = path.extname(filename).toLowerCase();
+    const contentType = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.pdf': 'application/pdf',
+      '.txt': 'text/plain',
+      '.csv': 'text/csv',
+      '.json': 'application/json'
+    }[ext] || 'application/octet-stream';
+
+    // Set appropriate headers
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', stats.size);
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+    
+    // Stream the file
+    const stream = fs.createReadStream(filePath);
+    stream.pipe(res);
+    
+    // Handle stream errors
+    stream.on('error', (error) => {
+      console.error('File stream error:', error);
+      if (!res.headersSent) {
+        res.status(500).json({ 
+          success: false,
+          message: 'Error reading file' 
+        });
+      }
+    });
   } catch (error) {
     console.error('Get file error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Failed to retrieve file' 
-    });
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to retrieve file',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
   }
 };
