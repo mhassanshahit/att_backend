@@ -63,15 +63,19 @@ exports.getFile = async (req, res) => {
     }
 
     // Prevent directory traversal
-    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    if (filename.includes('..') || filename.includes('\\')) {
       return res.status(400).json({ 
         success: false,
         message: 'Invalid filename' 
       });
     }
 
-    const uploadsDir = path.join(__dirname, '../uploads');
-    const filePath = path.join(uploadsDir, filename);
+    // Handle uploads/ prefix - strip it if present
+    const cleanFilename = filename.startsWith('uploads/') ? filename.replace('uploads/', '') : filename;
+
+    // Use the same uploads directory logic as routes.js
+    const uploadsDir = process.env.NODE_ENV === 'production' ? '/tmp/uploads' : path.join(__dirname, '../uploads');
+    const filePath = path.join(uploadsDir, cleanFilename);
     
     // Verify the file exists and is within the uploads directory
     if (!fs.existsSync(filePath) || !filePath.startsWith(uploadsDir)) {
