@@ -3,6 +3,16 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 
+// Add unhandled exception and rejection handlers
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
 const routes = require('./routes');
 
 // Initialize Express app
@@ -112,4 +122,4 @@ process.on('SIGINT', () => {
   });
 });
 
-module.exports = { app };
+module.exports = app;
