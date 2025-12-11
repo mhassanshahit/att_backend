@@ -122,4 +122,7 @@ process.on('SIGINT', () => {
   });
 });
 
-module.exports = app;
+// Export for Vercel serverless function
+module.exports = (req, res) => {
+  app(req, res);
+};
