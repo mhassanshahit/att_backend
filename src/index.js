@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 
 // Add unhandled exception and rejection handlers
 process.on('unhandledRejection', (reason, promise) => {
@@ -85,6 +86,10 @@ app.get('/', (req, res) => {
 
 // API routes (must be before 404 handler)
 app.use('/api', routes);
+
+// Static file serving for uploads (placed after API routes)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/api/files/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Handle 404
 app.use((req, res) => {

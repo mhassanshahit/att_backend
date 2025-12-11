@@ -1,4 +1,5 @@
 const express = require('express');
+const fs = require('fs');
 const { authenticate } = require('./middlewares/auth');
 const { requireRole } = require('./middlewares/roleAuth');
 const multer = require('multer');
@@ -10,12 +11,29 @@ const employeeController = require('./controllers/employeeController');
 const attendanceController = require('./controllers/attendanceController');
 const uploadController = require('./controllers/uploadController');
 const exportController = require('./controllers/exportController');
+const healthController = require('./controllers/healthController');
 
 const router = express.Router();
 
 // Multer configuration for file uploads
-// Vercel uses ephemeral filesystem, so we use memory storage with base64 encoding
-const storage = multer.memoryStorage();
+const uploadsDir = path.join(__dirname, '../uploads');
+
+// Ensure uploads directory exists
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with timestamp
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, 'photo-' + uniqueSuffix + ext);
+  }
+});
 
 const upload = multer({ 
   storage: storage,
@@ -38,6 +56,7 @@ router.get('/auth/me', authenticate, authController.me);
 
 // Employee management routes
 router.get('/employees', authenticate, employeeController.list);
+router.get('/employees/:id', authenticate, employeeController.get);
 router.post('/employees', authenticate, requireRole(['ADMIN']), upload.single('profileImage'), employeeController.create);
 router.put('/employees/:id', authenticate, requireRole(['ADMIN']), upload.single('profileImage'), employeeController.update);
 router.delete('/employees/:id', authenticate, requireRole(['ADMIN']), employeeController.remove);
@@ -56,5 +75,8 @@ router.get('/files/:filename', uploadController.getFile);
 // Export routes
 router.post('/export/csv', authenticate, requireRole(['ADMIN']), exportController.exportAttendanceCsv);
 router.get('/export/templates', exportController.getTemplates);
+
+// Health check route
+router.get('/health', healthController.checkHealth);
 
 module.exports = router;

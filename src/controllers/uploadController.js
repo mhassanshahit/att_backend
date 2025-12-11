@@ -10,7 +10,7 @@ exports.uploadPhoto = async (req, res) => {
       });
     }
 
-    // Validate file type
+    // Validate file type (multer already filtered, but double-check)
     if (!req.file.mimetype.startsWith('image/')) {
       // Delete the uploaded file if it's not an image
       const filePath = req.file.path;
@@ -24,12 +24,14 @@ exports.uploadPhoto = async (req, res) => {
       });
     }
 
-    const photoUrl = `/uploads/${req.file.filename}`;
+    // File is already saved to disk by multer, return the URL
+    const photoUrl = `/api/files/uploads/${req.file.filename}`;
     
     console.log('Photo uploaded successfully:', {
       filename: req.file.filename,
       size: req.file.size,
       mimetype: req.file.mimetype,
+      path: req.file.path,
       url: photoUrl
     });
     
