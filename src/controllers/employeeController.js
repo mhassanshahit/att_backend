@@ -95,7 +95,8 @@ exports.create = async (req, res) => {
     let profileImagePath = null;
     if (req.file) {
       // File uploaded via form-data
-      profileImagePath = `/uploads/${req.file.filename}`;
+      // Store canonical API path so frontend can use it directly
+      profileImagePath = `/api/files/uploads/${req.file.filename}`;
     } else if (req.body.profileImage && req.body.profileImage.trim()) {
       // Handle local file URI (from React Native ImagePicker)
       const profileImageStr = req.body.profileImage.trim();
@@ -197,7 +198,8 @@ exports.update = async (req, res) => {
     // Handle profile image
     if (req.file) {
       // File uploaded via form-data
-      updateData.profileImage = `/uploads/${req.file.filename}`;
+      // Store canonical API path so frontend can use it directly
+      updateData.profileImage = `/api/files/uploads/${req.file.filename}`;
     } else if (req.body.profileImage !== undefined) {
       // Profile image URL provided in JSON (for backward compatibility)
       if (req.body.profileImage.trim()) {

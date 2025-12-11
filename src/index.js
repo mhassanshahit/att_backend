@@ -88,8 +88,13 @@ app.get('/', (req, res) => {
 app.use('/api', routes);
 
 // Static file serving for uploads (placed after API routes)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-app.use('/api/files/uploads', express.static(path.join(__dirname, '../uploads')));
+// Use the same uploads directory convention as the upload routes/controllers
+const uploadsDir = process.env.NODE_ENV === 'production'
+  ? '/tmp/uploads'
+  : path.join(__dirname, '../uploads');
+
+app.use('/uploads', express.static(uploadsDir));
+app.use('/api/files/uploads', express.static(uploadsDir));
 
 // Handle 404
 app.use((req, res) => {
