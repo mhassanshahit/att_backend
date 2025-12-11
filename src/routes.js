@@ -16,11 +16,15 @@ const healthController = require('./controllers/healthController');
 const router = express.Router();
 
 // Multer configuration for file uploads
-const uploadsDir = path.join(__dirname, '../uploads');
+const uploadsDir = process.env.NODE_ENV === 'production' ? '/tmp/uploads' : path.join(__dirname, '../uploads');
 
 // Ensure uploads directory exists
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+} catch (error) {
+  console.error('Failed to create uploads directory:', error);
 }
 
 const storage = multer.diskStorage({
