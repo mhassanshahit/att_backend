@@ -265,6 +265,24 @@ exports.remove = async (req, res) => {
     
     const whereClause = employee ? { customId: id } : { employeeId: id };
     
+    // First, get the actual employee to find their real ObjectId
+    const actualEmployee = await prisma.employee.findUnique({ 
+      where: whereClause 
+    });
+    
+    if (!actualEmployee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+    
+    // Delete related attendance records first (cascade delete)
+    await prisma.attendance.deleteMany({
+      where: { employeeId: actualEmployee.employeeId }
+    });
+    
+    // Now delete the employee
     await prisma.employee.delete({ where: whereClause });
     
     res.json({ 
