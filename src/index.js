@@ -95,6 +95,7 @@ const uploadsDir = process.env.NODE_ENV === 'production'
 
 app.use('/uploads', express.static(uploadsDir));
 app.use('/api/files/uploads', express.static(uploadsDir));
+app.use('/api/files', express.static(uploadsDir));
 
 // Handle 404
 app.use((req, res) => {
