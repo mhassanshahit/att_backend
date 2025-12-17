@@ -144,11 +144,39 @@ exports.updateProfile = async (req, res) => {
     );
 
     if (isHardcodedUser) {
-      // For hardcoded users, we can't persist to database, so return an error
-      return res.status(403).json({
-        success: false,
-        message: 'Profile updates not supported for hardcoded users'
-      });
+      // Check if it's a hardcoded admin user
+      const isAdminUser = Object.values(HARDCODED_USERS).some(
+        users => users.admin.id === userId
+      );
+      
+      if (isAdminUser) {
+        // Allow admin hardcoded users to update profile picture
+        if (profilePicture !== undefined) {
+          return res.json({
+            success: true,
+            message: 'Profile picture updated successfully',
+            user: {
+              id: userId,
+              email: req.user.email,
+              name: name || req.user.email.split('@')[0],
+              role: 'ADMIN',
+              profilePicture: profilePicture,
+              createdAt: new Date()
+            }
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            message: 'Only profile picture updates are supported for admin users'
+          });
+        }
+      } else {
+        // Block regular hardcoded users from profile updates
+        return res.status(403).json({
+          success: false,
+          message: 'Profile updates are only available for admin users. Please contact your administrator for assistance.'
+        });
+      }
     }
 
     // Find and update the user in database
