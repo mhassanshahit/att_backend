@@ -133,6 +133,70 @@ exports.logout = async (req, res) => {
   }
 };
 
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, email, profilePicture } = req.body;
+    const userId = req.user.id;
+
+    // Check if this is a hardcoded user
+    const isHardcodedUser = Object.values(HARDCODED_USERS).some(
+      users => users.admin.id === userId || users.user.id === userId
+    );
+
+    if (isHardcodedUser) {
+      // For hardcoded users, we can't persist to database, so return an error
+      return res.status(403).json({
+        success: false,
+        message: 'Profile updates not supported for hardcoded users'
+      });
+    }
+
+    // Find and update the user in database
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email;
+    if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      include: { employees: true }
+    });
+
+    res.json({
+      success: true,
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        role: updatedUser.role,
+        profilePicture: updatedUser.profilePicture,
+        createdAt: updatedUser.createdAt,
+        updatedAt: updatedUser.updatedAt,
+        employees: updatedUser.employees
+      }
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    if (error.code === 'P2002') {
+      return res.status(400).json({
+        success: false,
+        message: 'Email already exists'
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 exports.me = async (req, res) => {
   try {
     // Check if this is a hardcoded user
@@ -159,7 +223,9 @@ exports.me = async (req, res) => {
           user: {
             id: userData.id,
             email: userData.email,
+            name: userData.email.split('@')[0], // Default name from email
             role: userData.role,
+            profilePicture: null,
             createdAt: new Date(),
             employees: []
           }
@@ -187,8 +253,11 @@ exports.me = async (req, res) => {
       user: {
         id: user.id,
         email: user.email,
+        name: user.name,
         role: user.role,
+        profilePicture: user.profilePicture,
         createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
         employees: user.employees
       }
     });

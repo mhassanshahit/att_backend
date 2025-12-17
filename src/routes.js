@@ -12,6 +12,7 @@ const attendanceController = require('./controllers/attendanceController');
 const uploadController = require('./controllers/uploadController');
 const exportController = require('./controllers/exportController');
 const healthController = require('./controllers/healthController');
+const userController = require('./controllers/userController');
 
 const router = express.Router();
 
@@ -57,6 +58,13 @@ const upload = multer({
 router.post('/auth/login', authController.login);
 router.post('/auth/logout', authenticate, authController.logout);
 router.get('/auth/me', authenticate, authController.me);
+router.put('/auth/profile', authenticate, authController.updateProfile);
+
+// User management routes (Admin only)
+router.get('/users', authenticate, requireRole(['ADMIN']), userController.list);
+router.get('/users/:id', authenticate, requireRole(['ADMIN']), userController.get);
+router.put('/users/:id', authenticate, requireRole(['ADMIN']), userController.update);
+router.delete('/users/:id', authenticate, requireRole(['ADMIN']), userController.remove);
 
 // Employee management routes
 router.get('/employees', authenticate, employeeController.list);
